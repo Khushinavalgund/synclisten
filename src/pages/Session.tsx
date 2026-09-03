@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { SessionRoom } from "@/components/session-room";
 import { Wordmark } from "@/components/wordmark";
 import { api } from "@/convex/_generated/api";
-import { sessionLink } from "@/lib/format";
+import { extractSessionCode, sessionLink } from "@/lib/format";
 import { useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
@@ -16,6 +16,49 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
+
+/** Small form on the not-found screen so a mistyped code is recoverable. */
+function RetryJoinForm() {
+  const navigate = useNavigate();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const code = extractSessionCode(value);
+    if (!code) {
+      setError(
+        "That doesn't look like a session code. Codes are 6 characters — letters A–Z and digits 2–9, without 0, 1, I or O.",
+      );
+      return;
+    }
+    navigate(`/session/${code}`, { replace: true });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-8 flex gap-2">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          setError(null);
+        }}
+        placeholder="Enter the code again"
+        aria-label="Session code"
+        className="h-10 min-w-0 flex-1 rounded-md border border-border bg-background px-3 font-mono text-sm uppercase tracking-[0.2em] outline-none transition-colors placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/70 focus:border-ring focus:ring-[3px] focus:ring-ring/40"
+      />
+      <Button type="submit" variant="outline">
+        Try again
+      </Button>
+      {error && (
+        <p className="mt-3 w-full text-left text-sm leading-5 text-destructive">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
 
 export default function SessionPage() {
   const { code = "" } = useParams();
@@ -117,9 +160,15 @@ export default function SessionPage() {
             This session doesn&apos;t exist
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            The link may be mistyped, or the session has already ended.
+            We looked up code{" "}
+            <span className="font-mono tracking-widest text-foreground">
+              {code}
+            </span>{" "}
+            and couldn&apos;t find a session with it. Double-check it with the
+            host — or try again below.
           </p>
-          <Button asChild className="mt-8" variant="outline">
+          <RetryJoinForm />
+          <Button asChild className="mt-6" variant="outline">
             <Link to="/dashboard">
               <ArrowLeft className="size-4" />
               Back to dashboard

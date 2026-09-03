@@ -13,7 +13,7 @@ import { Wordmark } from "@/components/wordmark";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDuration } from "@/lib/format";
+import { extractSessionCode, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   // Solo playback state.
   const [soloSongId, setSoloSongId] = useState<Id<"songs"> | null>(null);
@@ -91,8 +92,14 @@ export default function Dashboard() {
 
   const handleJoinByCode = (event: React.FormEvent) => {
     event.preventDefault();
-    const code = joinCode.trim().toUpperCase();
-    if (!code) return;
+    const code = extractSessionCode(joinCode);
+    if (!code) {
+      setJoinError(
+        "That doesn't look like a session code. Codes are 6 characters — letters A–Z and digits 2–9, without 0, 1, I or O. You can also paste the full invite link.",
+      );
+      return;
+    }
+    setJoinError(null);
     navigate(`/session/${code}`);
   };
 
@@ -193,9 +200,11 @@ export default function Dashboard() {
                   <input
                     type="text"
                     value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value)}
+                    onChange={(e) => {
+                      setJoinCode(e.target.value);
+                      setJoinError(null);
+                    }}
                     placeholder="K7M2QX"
-                    maxLength={6}
                     aria-label="Session code"
                     className="h-10 min-w-0 flex-1 rounded-md border border-border bg-background px-3 font-mono text-sm uppercase tracking-[0.2em] outline-none transition-colors placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/70 focus:border-ring focus:ring-[3px] focus:ring-ring/40"
                   />
@@ -204,6 +213,11 @@ export default function Dashboard() {
                     Join
                   </Button>
                 </form>
+                {joinError && (
+                  <p className="mt-3 text-sm leading-5 text-destructive">
+                    {joinError}
+                  </p>
+                )}
               </div>
             </div>
           )}

@@ -14,6 +14,24 @@ export function sessionLink(code: string): string {
   return `${window.location.origin}/session/${code}`;
 }
 
+// Session codes are 6 chars from A–Z (minus I and O) and digits 2–9.
+const SESSION_CODE_RE = /^[A-HJ-NP-Z2-9]{6}$/;
+
+/**
+ * Normalizes raw user input (a code or a full invite link) into a valid
+ * session code, or null when the input can't be a session code.
+ */
+export function extractSessionCode(input: string): string | null {
+  if (!input) return null;
+  const raw = input.trim();
+  if (!raw) return null;
+  // Accept a pasted invite link: https://host/session/K7M2QX or /session/K7M2QX
+  const linkMatch = raw.match(/\/session\/([A-Za-z0-9]+)/);
+  const candidate = linkMatch ? linkMatch[1] : raw;
+  const normalized = candidate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return SESSION_CODE_RE.test(normalized) ? normalized : null;
+}
+
 /** Reads an audio file's duration in milliseconds via the browser. */
 export function readAudioDurationMs(file: File): Promise<number | undefined> {
   return new Promise((resolve) => {
