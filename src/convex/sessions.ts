@@ -81,13 +81,13 @@ export const byCode = query({
   args: { code: v.string() },
   handler: async (ctx, { code }) => {
     const userId = await getAuthUserId(ctx);
-    if (userId === null) return null;
+    if (userId === null) return { status: "unauthenticated" as const };
 
     const session = await ctx.db
       .query("sessions")
       .withIndex("by_code", (q) => q.eq("code", code.trim().toUpperCase()))
       .first();
-    if (session === null) return null;
+    if (session === null) return { status: "not_found" as const };
 
     const [host, guest] = await Promise.all([
       ctx.db.get(session.hostId),
@@ -144,6 +144,7 @@ export const byCode = query({
     }
 
     return {
+      status: "ok" as const,
       session: {
         _id: session._id,
         code: session.code,

@@ -113,7 +113,7 @@ export default function SessionPage() {
   };
 
   const handleLeave = async () => {
-    if (!data) return;
+    if (!data || data.status !== "ok") return;
     setIsExiting(true);
     try {
       await leave({ sessionId: data.session._id });
@@ -126,7 +126,7 @@ export default function SessionPage() {
   };
 
   const handleEnd = async () => {
-    if (!data) return;
+    if (!data || data.status !== "ok") return;
     setIsExiting(true);
     try {
       await end({ sessionId: data.session._id });
@@ -148,8 +148,44 @@ export default function SessionPage() {
     );
   }
 
+  // --- Not signed in (token not resolving server-side) ---------------------
+  if (data.status === "unauthenticated") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-foreground">
+        <div className="w-full max-w-sm text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            Invite link
+          </p>
+          <h1 className="mt-3 text-2xl font-medium tracking-tight">
+            Sign in to join this session
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Your sign-in didn&apos;t carry through to this page. Sign in again
+            and you&apos;ll land right back here.
+          </p>
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <Button asChild size="lg" className="min-w-44">
+              <Link
+                to={`/auth?returnTo=${encodeURIComponent(`/session/${code}`)}`}
+              >
+                Sign in
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link to="/dashboard">
+                <ArrowLeft className="size-4" />
+                Back to dashboard
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // --- Not found -----------------------------------------------------------
-  if (data === null) {
+  if (data.status === "not_found") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-foreground">
         <div className="w-full max-w-sm text-center">
@@ -248,13 +284,13 @@ export default function SessionPage() {
             <div className="flex size-12 items-center justify-center rounded-full border border-border">
               <Link2 className="size-5 text-muted-foreground" />
             </div>
-          <h1 className="mt-6 text-2xl font-medium tracking-tight">
-            Your friend is one link away
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            One link, one guest. When they open it and sign in, the music
-            starts in sync.
-          </p>
+            <h1 className="mt-6 text-2xl font-medium tracking-tight">
+              Your friend is one link away
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              One link, one guest. When they open it and sign in, the music
+              starts in sync.
+            </p>
 
             <div className="mt-10 w-full">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -298,7 +334,7 @@ export default function SessionPage() {
               className="mt-10"
               disabled={isExiting}
               onClick={async () => {
-                if (!data) return;
+                if (!data || data.status !== "ok") return;
                 setIsExiting(true);
                 try {
                   await end({ sessionId: data.session._id });
