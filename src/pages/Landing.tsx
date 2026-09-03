@@ -73,7 +73,7 @@ const steps = [
     icon: Link2,
     chip: "bg-amber-300 text-black",
     title: "Send the invite",
-    body: "Start a session and hand the link to exactly one friend. A private room for two, nothing more.",
+    body: "Start a session, then share the invite link or the six-letter code. A private room for two, nothing more.",
   },
   {
     number: "03",
