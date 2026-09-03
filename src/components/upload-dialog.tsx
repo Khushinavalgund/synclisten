@@ -75,15 +75,22 @@ export function UploadDialog({
       const durationMs = await readAudioDurationMs(file);
 
       const uploadUrl = await generateUploadUrl();
+      // This Convex version expects a plain POST with the file as the body;
+      // the response is `{ storageId }` (no Content-Type header needed).
       const response = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
+        method: "POST",
         body: file,
       });
       if (!response.ok) {
-        throw new Error("Upload failed — please try again.");
+        throw new Error(
+          `Upload failed (${response.status}) — please try again.`,
+        );
       }
-      const storageId = (await response.json()) as Id<"_storage">;
+      const result = (await response.json()) as { storageId?: string };
+      if (!result.storageId) {
+        throw new Error("Upload failed — the server did not return a file id.");
+      }
+      const storageId = result.storageId as Id<"_storage">;
 
       const title =
         file.name.replace(/\.[^.]+$/, "").trim() || "Untitled";
