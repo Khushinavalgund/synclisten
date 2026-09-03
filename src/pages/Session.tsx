@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { Button } from "@/components/ui/button";
 import { SessionRoom } from "@/components/session-room";
 import { Wordmark } from "@/components/wordmark";
@@ -74,26 +75,32 @@ export default function SessionPage() {
   const [copied, setCopied] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
+  // Inside the Android app the browser origin is https://localhost, so a
+  // real invite link would be useless to share — friends join with the code.
+  const isNativeApp = Capacitor.isNativePlatform();
+
   useEffect(() => {
     if (!code) navigate("/dashboard", { replace: true });
   }, [code, navigate]);
 
   if (!code) return null;
 
-  const copyLink = async () => {
-    const link = sessionLink(code);
+  const copyInvite = async () => {
+    const text = isNativeApp ? code : sessionLink(code);
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(text);
     } catch {
       const textarea = document.createElement("textarea");
-      textarea.value = link;
+      textarea.value = text;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
     }
     setCopied(true);
-    toast.success("Invite link copied");
+    toast.success(
+      isNativeApp ? "Code copied — send it to your friend" : "Invite link copied",
+    );
     window.setTimeout(() => setCopied(false), 2000);
   };
 
@@ -293,32 +300,61 @@ export default function SessionPage() {
             </p>
 
             <div className="mt-10 w-full">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                Invite link
-              </p>
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-2 pl-4">
-                <span className="min-w-0 flex-1 truncate text-left text-sm">
-                  {sessionLink(session.code)}
-                </span>
-                <Button
-                  variant={copied ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={copyLink}
-                >
-                  {copied ? (
-                    <Check className="size-4" />
-                  ) : (
-                    <Copy className="size-4" />
-                  )}
-                  {copied ? "Copied" : "Copy"}
-                </Button>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Or share the code:{" "}
-                <span className="font-mono tracking-widest text-foreground">
-                  {session.code}
-                </span>
-              </p>
+              {isNativeApp ? (
+                <>
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    Session code
+                  </p>
+                  <p className="mt-4 font-mono text-4xl tracking-[0.25em] text-foreground">
+                    {session.code}
+                  </p>
+                  <Button
+                    className="mt-6"
+                    variant={copied ? "secondary" : "outline"}
+                    onClick={copyInvite}
+                  >
+                    {copied ? (
+                      <Check className="size-4" />
+                    ) : (
+                      <Copy className="size-4" />
+                    )}
+                    {copied ? "Copied" : "Copy code"}
+                  </Button>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Send this code to your friend — they open MyMusic and tap
+                    “Join with a code” to hop in.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    Invite link
+                  </p>
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-2 pl-4">
+                    <span className="min-w-0 flex-1 truncate text-left text-sm">
+                      {sessionLink(session.code)}
+                    </span>
+                    <Button
+                      variant={copied ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={copyInvite}
+                    >
+                      {copied ? (
+                        <Check className="size-4" />
+                      ) : (
+                        <Copy className="size-4" />
+                      )}
+                      {copied ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Or share the code:{" "}
+                    <span className="font-mono tracking-widest text-foreground">
+                      {session.code}
+                    </span>
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="mt-12 flex items-center gap-3 text-xs text-muted-foreground">

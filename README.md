@@ -270,3 +270,31 @@ When using convex, make sure:
 - This includes importing generated files like `@/convex/_generated/server`, `@/convex/_generated/api`
 - Remember to import functions like useQuery, useMutation, useAction, etc. from `convex/react`
 - NEVER have return type validators.
+
+## Building the Android app (Capacitor)
+
+MyMusic is wrapped as a native Android app with Capacitor. The native project
+lives in `android/`; the app name is **MyMusic** (`com.mymusic.app`) and it
+talks to the same Convex backend as the published web app.
+
+After any change to the web code, refresh the embedded web build before
+building an APK:
+
+```bash
+bun run build && bunx cap sync android
+```
+
+Then build the APK (requires Android Studio, or Java + the Android SDK):
+
+```bash
+cd android && ./gradlew assembleDebug
+```
+
+The installable APK is written to
+`android/app/build/outputs/apk/debug/app-debug.apk`. Transfer it to an Android
+phone and open it to install (enable “Install unknown apps” when prompted).
+
+In the app, invites are shared as 6-character session codes — friends open
+MyMusic and tap **Join with a code**. Everyone must use the same build/backend
+so sessions sync; do not mix sessions from older builds that pointed at a
+different Convex deployment.

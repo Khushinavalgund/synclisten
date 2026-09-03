@@ -81,7 +81,14 @@ class RootErrorBoundary extends React.Component<
   }
 }
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+// Backend URL. The platform injects VITE_CONVEX_URL at build time; when it's
+// absent (native/off-platform builds) fall back to the production deployment so
+// every client — web previews, the published app, and the Android app — shares
+// one database.
+const convexUrl =
+  (import.meta.env.VITE_CONVEX_URL as string | undefined)?.trim() ||
+  "https://neat-mockingbird-685.convex.cloud";
+const convex = new ConvexReactClient(convexUrl);
 
 
 
