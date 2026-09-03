@@ -1,0 +1,17 @@
+{
+  "name": "Duet — Listen together",
+  "short_name": "Duet",
+  "description": "A private listening room for two. Upload your own music and play it in perfect sync with one invite link.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
