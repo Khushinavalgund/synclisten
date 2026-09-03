@@ -26,8 +26,9 @@ export const get = query({
 });
 
 /**
- * Partial update of the shared playback state. Only the host may change
- * play/pause/position; both members may pick songs via `playSong`.
+ * Partial update of the shared playback state. Either member may change
+ * play/pause/position; whichever member acts last wins. Song changes go
+ * through `playSong` so the track is validated against the shared library.
  */
 export const patch = mutation({
   args: {
@@ -42,9 +43,9 @@ export const patch = mutation({
 
     const session = await ctx.db.get(args.sessionId);
     if (session === null) throw new Error("Session not found.");
-    if (session.hostId !== userId) {
-      throw new Error("Only the host controls playback.");
-    }
+    const isMember =
+      session.hostId === userId || session.guestId === userId;
+    if (!isMember) throw new Error("You are not in this session.");
     if (session.status === "ended") throw new Error("This session has ended.");
 
     const playback = await ctx.db

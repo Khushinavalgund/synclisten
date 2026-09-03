@@ -35,23 +35,26 @@ function stateKey(
  * Keeps one member's <audio> element in lockstep with the shared playback
  * state of a session.
  *
- * The host drives: play/pause/seek write to Convex, and both clients apply
- * remote changes to their own element. Echoes of a client's own writes are
- * skipped so there are no feedback loops. The host periodically publishes its
- * current position while playing, keeping the guest's estimate within about a
- * second of the host's timeline.
+ * Either member can control playback — play, pause, seek or pick the next
+ * song — and every change is written to Convex. Both clients apply remote
+ * changes to their own element; echoes of a client's own writes are skipped
+ * so there are no feedback loops. Each member who is actually listening
+ * publishes its current position periodically, keeping both timelines within
+ * about a second of each other.
+ *
+ * Browsers only allow audio to start from a user gesture, so the first time
+ * playback is started by the *other* member, the listener sees a "tap to
+ * listen" state (`needsActivation`) before audio begins.
  */
 export function useSessionPlayback({
   sessionId,
   songs,
-  isHost,
   audioRef,
   userActivated,
   onActivate,
 }: {
   sessionId: Id<"sessions">;
   songs: SessionSong[];
-  isHost: boolean;
   audioRef: React.RefObject<HTMLAudioElement | null>;
   userActivated: boolean;
   onActivate: () => void;
@@ -70,7 +73,6 @@ export function useSessionPlayback({
   const songsRef = useRef(songs);
   const playbackRef = useRef(playback);
   const userActivatedRef = useRef(userActivated);
-  const isHostRef = useRef(isHost);
   const sessionIdRef = useRef(sessionId);
   const patchRef = useRef(patch);
   const playSongRef = useRef(playSong);
@@ -91,7 +93,6 @@ export function useSessionPlayback({
     songsRef.current = songs;
     playbackRef.current = playback;
     userActivatedRef.current = userActivated;
-    isHostRef.current = isHost;
     sessionIdRef.current = sessionId;
     patchRef.current = patch;
     playSongRef.current = playSong;
@@ -113,7 +114,7 @@ export function useSessionPlayback({
   /**
    * Applies the latest remote playback state to the local element. Skipped
    * when the remote state matches what we already applied/wrote (echo), unless
-   * forced (e.g. the guest taps to listen and needs a fresh application).
+   * forced (e.g. after the user taps to listen and needs a fresh application).
    */
   const applyRemote = useCallback(
     (force = false) => {
@@ -147,7 +148,7 @@ export function useSessionPlayback({
             }
             if (audio.paused) {
               audio.play().catch(() => {
-                /* autoplay rejected — the tap-to-listen overlay covers this */
+                /* autoplay rejected — the tap-to-listen button covers this */
               });
             }
           }
@@ -211,7 +212,12 @@ export function useSessionPlayback({
     const onPlaying = () => setIsBuffering(false);
     const onCanPlay = () => setIsBuffering(false);
     const onEnded = () => {
-      if (isHostRef.current) {
+      const remote = playbackRef.current;
+      // Only reset the shared state if the track that ended is still current.
+      if (
+        remote?.songId &&
+        loadedSongIdRef.current === remote.songId
+      ) {
         lastSentPosRef.current = 0;
         appliedKeyRef.current = stateKey(loadedSongIdRef.current, false, 0);
         patchRef.current({
@@ -242,14 +248,17 @@ export function useSessionPlayback({
     };
   }, [audioRef]);
 
-  // The host publishes its position periodically while playing so the guest's
-  // estimate never drifts far from the host's timeline.
+  // Each member who is actively listening publishes its position while
+  // playing, so the shared timeline tracks the listener's clock and the other
+  // side never drifts far.
   useEffect(() => {
     const interval = window.setInterval(() => {
-      if (!isHostRef.current) return;
+      if (!userActivatedRef.current) return;
       const audio = audioRef.current;
       const remote = playbackRef.current;
       if (!audio || !remote || audio.paused) return;
+      const songId = loadedSongIdRef.current ?? remote.songId;
+      if (!songId) return;
       const pos = Math.round(audio.currentTime * 1000);
       if (
         lastSentPosRef.current !== null &&
@@ -258,11 +267,7 @@ export function useSessionPlayback({
         return;
       }
       lastSentPosRef.current = pos;
-      appliedKeyRef.current = stateKey(
-        loadedSongIdRef.current,
-        true,
-        pos,
-      );
+      appliedKeyRef.current = stateKey(songId, true, pos);
       patchRef.current({
         sessionId: sessionIdRef.current,
         positionMs: pos,
@@ -272,7 +277,7 @@ export function useSessionPlayback({
     return () => window.clearInterval(interval);
   }, [audioRef]);
 
-  /** First gesture: the guest permits audio to start following the host. */
+  /** First gesture: permit audio to start following the shared playback. */
   const activate = useCallback(() => {
     userActivatedRef.current = true;
     // A stale queued seek would yank the audio backwards once metadata loads;
@@ -289,39 +294,42 @@ export function useSessionPlayback({
       const audio = audioRef.current;
       if (!song || !audio) return;
 
-      if (isHostRef.current) {
-        loadTrack(song, 0, true);
-        appliedKeyRef.current = stateKey(songId, true, 0);
-        lastSentPosRef.current = 0;
-        patchRef.current({
-          sessionId: sessionIdRef.current,
-          songId,
-          positionMs: 0,
-          isPlaying: true,
-        });
-      } else {
-        playSongRef.current({ sessionId: sessionIdRef.current, songId });
-      }
+      // The click is a user gesture: mark the member as listening so remote
+      // changes keep flowing, and start audio right away.
+      userActivatedRef.current = true;
+      onActivate();
+
+      loadTrack(song, 0, true);
+      appliedKeyRef.current = stateKey(songId, true, 0);
+      lastSentPosRef.current = 0;
+      playSongRef.current({ sessionId: sessionIdRef.current, songId }).catch(
+        () => {},
+      );
+      // Play within the gesture; the browser queues it until metadata loads.
+      audio.play().catch(() => {});
     },
-    [audioRef, loadTrack],
+    [audioRef, loadTrack, onActivate],
   );
 
-  /** Host-only: play or pause. */
+  /** Play or pause the current track. Either member can do this. */
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (!isHostRef.current) return;
 
     const remote = playbackRef.current;
     const songId = loadedSongIdRef.current ?? remote?.songId;
 
     if (!songId) {
       const first = songsRef.current[0];
-      if (first) pickSong(first._id);
+      if (first) {
+        pickSong(first._id);
+      }
       return;
     }
 
     const pos = Math.round(audio.currentTime * 1000);
+    userActivatedRef.current = true;
+    onActivate();
 
     if (audio.paused) {
       // Make sure the remote track is actually loaded before playing.
@@ -337,6 +345,7 @@ export function useSessionPlayback({
             positionMs: target,
             isPlaying: true,
           });
+          audio.play().catch(() => {});
           return;
         }
       }
@@ -358,14 +367,13 @@ export function useSessionPlayback({
         isPlaying: false,
       });
     }
-  }, [audioRef, loadTrack, pickSong]);
+  }, [audioRef, loadTrack, onActivate, pickSong]);
 
-  /** Host-only: seek to a position in the current track. */
+  /** Seek to a position in the current track. Either member can do this. */
   const seek = useCallback(
     (ms: number) => {
       const audio = audioRef.current;
       if (!audio) return;
-      if (!isHostRef.current) return;
       const songId = loadedSongIdRef.current ?? playbackRef.current?.songId;
       if (!songId) return;
 
@@ -385,8 +393,9 @@ export function useSessionPlayback({
     [audioRef],
   );
 
-  const needsActivation =
-    !userActivated && playback?.isPlaying === true && !isHost;
+  // A member needs a tap before audio can start whenever the shared state is
+  // playing but that member hasn't interacted yet (autoplay policy).
+  const needsActivation = !userActivated && playback?.isPlaying === true;
 
   return {
     playback: playback ?? null,

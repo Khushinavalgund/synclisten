@@ -96,7 +96,6 @@ export function SessionRoom({
   } = useSessionPlayback({
     sessionId,
     songs,
-    isHost,
     audioRef,
     userActivated,
     onActivate: () => setUserActivated(true),
@@ -108,7 +107,6 @@ export function SessionRoom({
 
   const shownPosition = scrub ?? positionMs;
   const shownDuration = durationMs || currentSong?.durationMs || 0;
-  const progress = shownDuration > 0 ? shownPosition / shownDuration : 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -169,22 +167,7 @@ export function SessionRoom({
               </div>
 
               <div className="flex items-center gap-5">
-                {isHost ? (
-                  <Button
-                    size="icon-lg"
-                    className="rounded-full"
-                    onClick={togglePlay}
-                    aria-label={isPlaying ? "Pause" : "Play"}
-                  >
-                    {isBuffering ? (
-                      <span className="size-4 animate-pulse rounded-full border border-current" />
-                    ) : isPlaying ? (
-                      <Pause className="size-5" />
-                    ) : (
-                      <Play className="size-5 translate-x-px" />
-                    )}
-                  </Button>
-                ) : needsActivation ? (
+                {needsActivation ? (
                   <Button
                     size="icon-lg"
                     className="rounded-full"
@@ -196,9 +179,9 @@ export function SessionRoom({
                 ) : (
                   <Button
                     size="icon-lg"
-                    variant="outline"
-                    className="pointer-events-none rounded-full"
-                    aria-label="Host controls playback"
+                    className="rounded-full"
+                    onClick={togglePlay}
+                    aria-label={isPlaying ? "Pause" : "Play"}
                   >
                     {isBuffering ? (
                       <span className="size-4 animate-pulse rounded-full border border-current" />
@@ -216,52 +199,33 @@ export function SessionRoom({
                     <span>{formatDuration(shownDuration)}</span>
                   </div>
                   <div className="mt-2">
-                    {isHost ? (
-                      <Slider
-                        value={[Math.min(shownPosition, shownDuration || 1)]}
-                        max={Math.max(shownDuration, 1)}
-                        step={1}
-                        onValueChange={(values) => {
-                          setScrub(values[0]);
-                          if (audioRef.current) {
-                            audioRef.current.currentTime = values[0] / 1000;
-                          }
-                        }}
-                        onValueCommit={(values) => {
-                          seek(values[0]);
-                          setScrub(null);
-                        }}
-                        className="cursor-pointer"
-                      />
-                    ) : (
-                      <div
-                        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
-                        aria-hidden="true"
-                      >
-                        <div
-                          className="h-full rounded-full bg-primary transition-[width] duration-300"
-                          style={{
-                            width: `${Math.min(Math.max(progress * 100, 0), 100)}%`,
-                          }}
-                        />
-                      </div>
-                    )}
+                    <Slider
+                      value={[Math.min(shownPosition, shownDuration || 1)]}
+                      max={Math.max(shownDuration, 1)}
+                      step={1}
+                      onValueChange={(values) => {
+                        setScrub(values[0]);
+                        if (audioRef.current) {
+                          audioRef.current.currentTime = values[0] / 1000;
+                        }
+                      }}
+                      onValueCommit={(values) => {
+                        seek(values[0]);
+                        setScrub(null);
+                      }}
+                      className="cursor-pointer"
+                    />
                   </div>
                 </div>
               </div>
 
               <p className="text-xs text-muted-foreground">
-                {isHost ? (
-                  <>
-                    You&apos;re driving tonight — play, pause and seek are yours.
-                    Your friend hears it in sync.
-                  </>
-                ) : needsActivation ? (
-                  <>Tap play above to start following {host.name} in sync.</>
+                {needsActivation ? (
+                  <>Tap play above to start listening in sync.</>
                 ) : (
                   <>
-                    Following {host.name} in sync — they drive playback. You
-                    can still pick the next song.
+                    Either of you can play, pause, seek or pick the next song
+                    — both sides stay in sync.
                   </>
                 )}
               </p>
@@ -277,9 +241,7 @@ export function SessionRoom({
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {songs.length > 0
-                    ? isHost
-                      ? "Pick a song from the library below to start."
-                      : "Waiting for someone to pick a song — both of you can."
+                    ? "Pick a song from the library below — either of you can start, and everyone can play, pause or skip."
                     : "Neither library has songs yet. Upload a track from your dashboard first."}
                 </p>
               </div>
