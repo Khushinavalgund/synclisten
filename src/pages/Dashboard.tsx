@@ -20,9 +20,10 @@ import {
   LogOut,
   Music2,
   Play,
+  Search,
   Upload,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 
 export default function Dashboard() {
@@ -36,6 +37,18 @@ export default function Dashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const filteredSongs = useMemo(() => {
+    if (!mySongs) return mySongs;
+    const q = query.trim().toLowerCase();
+    if (!q) return mySongs;
+    return mySongs.filter(
+      (song) =>
+        song.title.toLowerCase().includes(q) ||
+        (song.artist ?? "").toLowerCase().includes(q),
+    );
+  }, [mySongs, query]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -168,10 +181,10 @@ export default function Dashboard() {
                 <EmptyMedia variant="icon">
                   <Music2 />
                 </EmptyMedia>
-                <EmptyTitle>Your library is empty</EmptyTitle>
+                <EmptyTitle>Your library is a blank canvas</EmptyTitle>
                 <EmptyDescription>
                   Add your own songs — any format, any length. They become
-                  playable in sessions you share with a friend.
+                  playable in the sessions you share.
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
@@ -183,31 +196,54 @@ export default function Dashboard() {
             </Empty>
           ) : (
             <>
-              <ul className="mt-4 divide-y divide-border">
-                {mySongs.map((song, index) => (
-                  <li
-                    key={song._id}
-                    className="flex items-center gap-4 px-1 py-3.5"
-                  >
-                    <span className="w-6 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                      {mySongs.length - index}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm">{song.title}</span>
-                      {song.artist && (
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {song.artist}
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-xs tabular-nums text-muted-foreground">
-                      {formatDuration(song.durationMs)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <div className="relative mt-4">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search your catalog…"
+                  aria-label="Search your library"
+                  className="h-10 w-full rounded-md border border-border bg-background pl-9 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-ring focus:ring-[3px] focus:ring-ring/40"
+                />
+              </div>
+
+              {filteredSongs && filteredSongs.length > 0 ? (
+                <ul className="mt-4 divide-y divide-border">
+                  {filteredSongs.map((song) => (
+                    <li
+                      key={song._id}
+                      className="flex items-center gap-4 px-1 py-3.5"
+                    >
+                      <span className="w-6 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                        {mySongs.length - mySongs.findIndex((s) => s._id === song._id)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm">{song.title}</span>
+                        {song.artist && (
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {song.artist}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {formatDuration(song.durationMs)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="mt-4 rounded-lg border border-dashed border-border px-6 py-14 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No matches for “{query.trim()}”. Try another title or
+                    artist.
+                  </p>
+                </div>
+              )}
+
               <p className="mt-4 text-xs text-muted-foreground">
-                Songs play inside sessions — start one above to listen together.
+                Songs come alive in sessions — start one above to listen
+                together.
               </p>
             </>
           )}

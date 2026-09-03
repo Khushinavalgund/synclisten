@@ -10,13 +10,14 @@ import { formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   LogOut,
+  Music2,
   Pause,
   Play,
+  Search,
   Square,
   Users,
-  Music2,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Wordmark } from "@/components/wordmark";
 
@@ -69,6 +70,17 @@ export function SessionRoom({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [userActivated, setUserActivated] = useState(false);
   const [scrub, setScrub] = useState<number | null>(null);
+  const [query, setQuery] = useState("");
+
+  const filteredSongs = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return songs;
+    return songs.filter(
+      (song) =>
+        song.title.toLowerCase().includes(q) ||
+        (song.artist ?? "").toLowerCase().includes(q),
+    );
+  }, [songs, query]);
 
   const {
     playback,
@@ -241,15 +253,15 @@ export function SessionRoom({
               <p className="text-xs text-muted-foreground">
                 {isHost ? (
                   <>
-                    You&apos;re the host — play, pause and seek are yours. Your
-                    friend follows in sync.
+                    You&apos;re driving tonight — play, pause and seek are yours.
+                    Your friend hears it in sync.
                   </>
                 ) : needsActivation ? (
                   <>Tap play above to start following {host.name} in sync.</>
                 ) : (
                   <>
-                    Following {host.name} in sync — the host controls playback.
-                    You can still pick the next song.
+                    Following {host.name} in sync — they drive playback. You
+                    can still pick the next song.
                   </>
                 )}
               </p>
@@ -295,55 +307,77 @@ export function SessionRoom({
               </p>
             </div>
           ) : (
-            <ul className="mt-4 divide-y divide-border">
-              {songs.map((song) => {
-                const isCurrent = playback?.songId === song._id;
-                return (
-                  <li key={song._id}>
-                    <button
-                      type="button"
-                      onClick={() => pickSong(song._id)}
-                      className={cn(
-                        "group flex w-full items-center gap-4 px-1 py-3.5 text-left transition-colors",
-                        "hover:bg-muted/40 focus-visible:outline-none",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "flex size-9 shrink-0 items-center justify-center rounded-full border",
-                          isCurrent
-                            ? "border-foreground bg-foreground text-background"
-                            : "border-border text-muted-foreground group-hover:border-foreground/40 group-hover:text-foreground",
-                        )}
-                      >
-                        {isCurrent && isPlaying ? (
-                          <Pause className="size-3.5" />
-                        ) : (
-                          <Play className="size-3.5 translate-x-px" />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span
+            <>
+              <div className="relative mt-4">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search the shared catalog…"
+                  aria-label="Search the shared library"
+                  className="h-10 w-full rounded-md border border-border bg-background pl-9 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-ring focus:ring-[3px] focus:ring-ring/40"
+                />
+              </div>
+
+              {filteredSongs.length > 0 ? (
+                <ul className="mt-4 divide-y divide-border">
+                  {filteredSongs.map((song) => {
+                    const isCurrent = playback?.songId === song._id;
+                    return (
+                      <li key={song._id}>
+                        <button
+                          type="button"
+                          onClick={() => pickSong(song._id)}
                           className={cn(
-                            "block truncate text-sm",
-                            isCurrent ? "font-medium" : "font-normal",
+                            "group flex w-full items-center gap-4 px-1 py-3.5 text-left transition-colors",
+                            "hover:bg-muted/40 focus-visible:outline-none",
                           )}
                         >
-                          {song.title}
-                        </span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {song.artist || "Untitled artist"} ·{" "}
-                          {song.uploaderName}
-                        </span>
-                      </span>
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {formatDuration(song.durationMs)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                          <span
+                            className={cn(
+                              "flex size-9 shrink-0 items-center justify-center rounded-full border",
+                              isCurrent
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border text-muted-foreground group-hover:border-primary/40 group-hover:text-primary",
+                            )}
+                          >
+                            {isCurrent && isPlaying ? (
+                              <Pause className="size-3.5" />
+                            ) : (
+                              <Play className="size-3.5 translate-x-px" />
+                            )}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span
+                              className={cn(
+                                "block truncate text-sm",
+                                isCurrent ? "font-medium" : "font-normal",
+                              )}
+                            >
+                              {song.title}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {song.artist || "Untitled artist"} ·{" "}
+                              {song.uploaderName}
+                            </span>
+                          </span>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {formatDuration(song.durationMs)}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="mt-4 rounded-lg border border-dashed border-border px-6 py-14 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No matches for “{query.trim()}” in the shared library.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </section>
       </main>

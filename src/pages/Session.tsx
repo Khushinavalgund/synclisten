@@ -118,8 +118,7 @@ export default function SessionPage() {
             This session doesn&apos;t exist
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            The code may be mistyped, or the session may have been created in
-            another app.
+            The link may be mistyped, or the session has already ended.
           </p>
           <Button asChild className="mt-8" variant="outline">
             <Link to="/dashboard">
@@ -201,13 +200,13 @@ export default function SessionPage() {
             <div className="flex size-12 items-center justify-center rounded-full border border-border">
               <Link2 className="size-5 text-muted-foreground" />
             </div>
-            <h1 className="mt-6 text-2xl font-medium tracking-tight">
-              Send this link to your friend
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              One link, one guest. When they open it and sign in, playback
-              starts in sync.
-            </p>
+          <h1 className="mt-6 text-2xl font-medium tracking-tight">
+            Your friend is one link away
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            One link, one guest. When they open it and sign in, the music
+            starts in sync.
+          </p>
 
             <div className="mt-10 w-full">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -240,10 +239,10 @@ export default function SessionPage() {
 
             <div className="mt-12 flex items-center gap-3 text-xs text-muted-foreground">
               <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-muted-foreground/40" />
-                <span className="relative inline-flex size-2 rounded-full bg-muted-foreground/60" />
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/40" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
               </span>
-              Waiting for your friend to join…
+              Room&apos;s open — waiting for your friend…
             </div>
 
             <Button
@@ -273,12 +272,12 @@ export default function SessionPage() {
               <Link2 className="size-5 text-muted-foreground" />
             </div>
             <h1 className="mt-6 text-2xl font-medium tracking-tight">
-              {host?.name} is listening
+              {host?.name} saved you a seat
             </h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              You&apos;ve been invited to a two-person listening session. Join
-              to hear the same music at the same moment — your uploaded songs
-              become part of the shared library too.
+              They started a two-person listening session and invited you. Join
+              to hear the same songs at the same moment — your uploads join the
+              shared library too.
             </p>
 
             {joinError && (

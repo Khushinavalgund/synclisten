@@ -1,7 +1,7 @@
 {
-  "name": "Duet — Listen together",
-  "short_name": "Duet",
-  "description": "A private listening room for two. Upload your own music and play it in perfect sync with one invite link.",
+  "name": "MyMusic — Listen together",
+  "short_name": "MyMusic",
+  "description": "Your own little music app. Upload songs from your device, send one invite link, and listen together in perfect sync.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

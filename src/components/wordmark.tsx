@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** Minimal two-circle "duo" mark. */
+/** Bold rounded play-button mark. */
 export function Mark({ className }: { className?: string }) {
   return (
     <svg
@@ -9,19 +9,17 @@ export function Mark({ className }: { className?: string }) {
       aria-hidden="true"
       className={className}
     >
-      <circle
-        cx="9"
-        cy="12"
-        r="6.25"
-        stroke="currentColor"
-        strokeWidth="1.5"
+      <rect
+        x="1.5"
+        y="1.5"
+        width="21"
+        height="21"
+        rx="7"
+        fill="currentColor"
       />
-      <circle
-        cx="15"
-        cy="12"
-        r="6.25"
-        stroke="currentColor"
-        strokeWidth="1.5"
+      <path
+        d="M9.4 7.9v8.2c0 .6.7 1 1.2.7l6.4-4.1c.4-.3.4-.9 0-1.2l-6.4-4.1c-.5-.3-1.2.1-1.2.5z"
+        fill="var(--background)"
       />
     </svg>
   );
@@ -38,9 +36,9 @@ export function Wordmark({
     <span
       className={cn("inline-flex items-center gap-2.5", className)}
     >
-      <Mark className={cn("size-5 text-foreground", markClassName)} />
-      <span className="text-[15px] font-semibold tracking-tight text-foreground">
-        Duet
+      <Mark className={cn("size-6 text-primary", markClassName)} />
+      <span className="text-[16px] font-bold tracking-tight text-foreground">
+        MyMusic
       </span>
     </span>
   );

@@ -129,7 +129,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       <Wordmark className="mb-5 mt-2" />
                     </button>
                   </div>
-                <CardTitle className="text-xl">Sign in to Duet</CardTitle>
+                <CardTitle className="text-xl">Sign in to MyMusic</CardTitle>
                 <CardDescription>
                   Enter your email to log in or sign up
                 </CardDescription>
