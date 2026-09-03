@@ -11,7 +11,6 @@ import {
   Copy,
   Link2,
   Loader2,
-  LogOut,
   Square,
 } from "lucide-react";
 import { useEffect, useState } from "react";

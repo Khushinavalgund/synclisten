@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
-import { ArrowRight, Link2, Music2, Pause, Play, Upload } from "lucide-react";
+import { ArrowRight, Link2, Pause, Play, Upload } from "lucide-react";
 import { Link } from "react-router";
 
 function SyncPanel() {
